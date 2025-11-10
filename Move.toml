@@ -1,0 +1,12 @@
+[package]
+name = "prophyt"
+version = "1.0.0"
+edition = "2024.beta"
+authors = ["Prophyt Team"]
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
+
+[addresses]
+prophyt = "0x0"
+sui = "0x2"
