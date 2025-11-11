@@ -3,12 +3,14 @@
 #[allow(duplicate_alias)]
 module prophyt::prediction_market {
     use std::string::String;
+    use std::vector;
     use sui::coin::{Self, Coin};
     use sui::tx_context::TxContext;
-    use sui::object::UID;
+    use sui::object::{Self, UID};
     use sui::table::{Self, Table};
     use sui::event;
     use sui::clock::{Self, Clock};
+    use sui::transfer;
     
     use prophyt::constants;
     use prophyt::access_control::{Self, OwnerCap, PausableCap};
@@ -114,7 +116,6 @@ module prophyt::prediction_market {
 
     /// Initialize the prediction market
     public fun initialize<CoinType>(
-        _owner_cap: &OwnerCap,
         fee_recipient: address,
         protocol_fee_percentage: u64,
         transaction_fee_percentage: u64,
@@ -146,7 +147,6 @@ module prophyt::prediction_market {
     /// Create a new prediction market
     public fun create_market<CoinType>(
         state: &mut PredictionMarketState<CoinType>,
-        _owner_cap: &OwnerCap,
         question: String,
         description: String,
         duration: u64,
@@ -449,8 +449,31 @@ module prophyt::prediction_market {
         });
     }
 
-    /// Get market details
+    /// Get market details (returns values for CLI access)
     public fun get_market<CoinType>(
+        state: &PredictionMarketState<CoinType>,
+        market_id: u64
+    ): (u64, String, String, u64, u64, bool, bool, u64, u64, u64, bool, address) {
+        assert!(table::contains(&state.markets, market_id), E_MARKET_NOT_FOUND);
+        let market = table::borrow(&state.markets, market_id);
+        (
+            market.id,
+            market.question,
+            market.description,
+            market.end_time,
+            market.resolution_time,
+            market.resolved,
+            market.outcome,
+            market.total_yes_amount,
+            market.total_no_amount,
+            market.total_yield_earned,
+            market.active,
+            market.creator
+        )
+    }
+
+    /// Get market reference (internal use only)
+    fun get_market_ref<CoinType>(
         state: &PredictionMarketState<CoinType>,
         market_id: u64
     ): &Market {
@@ -463,7 +486,7 @@ module prophyt::prediction_market {
         state: &PredictionMarketState<CoinType>,
         market_id: u64
     ): (u64, u64) {
-        let market = get_market(state, market_id);
+        let market = get_market_ref(state, market_id);
         
         if (market.total_yes_amount == 0 && market.total_no_amount == 0) {
             return (50, 50)
@@ -492,5 +515,42 @@ module prophyt::prediction_market {
         _ctx: &mut TxContext
     ) {
         access_control::unpause(&mut state.pausable_cap);
+    }
+
+    // Public accessor functions for Market fields
+    public fun market_id(market: &Market): u64 {
+        market.id
+    }
+
+    public fun market_active(market: &Market): bool {
+        market.active
+    }
+
+    public fun market_total_yes_amount(market: &Market): u64 {
+        market.total_yes_amount
+    }
+
+    public fun market_total_no_amount(market: &Market): u64 {
+        market.total_no_amount
+    }
+
+    public fun market_resolved(market: &Market): bool {
+        market.resolved
+    }
+
+    public fun market_outcome(market: &Market): bool {
+        market.outcome
+    }
+
+    public fun market_creator(market: &Market): address {
+        market.creator
+    }
+
+    public fun market_end_time(market: &Market): u64 {
+        market.end_time
+    }
+
+    public fun market_total_yield_earned(market: &Market): u64 {
+        market.total_yield_earned
     }
 }

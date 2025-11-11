@@ -5,9 +5,10 @@ module prophyt::volo_adapter {
     use std::string::{Self, String};
     use sui::coin::{Self, Coin};
     use sui::tx_context::TxContext;
-    use sui::object::UID;
+    use sui::object::{Self, UID};
     use sui::table::{Self, Table};
     use sui::vec_map::{Self, VecMap};
+    use sui::transfer;
 
     /// Error codes
     const E_INSUFFICIENT_BALANCE: u64 = 1;

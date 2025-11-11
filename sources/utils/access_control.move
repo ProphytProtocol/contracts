@@ -2,8 +2,8 @@
 /// Provides owner capabilities and pausable functionality for protocol contracts
 #[allow(duplicate_alias)]
 module prophyt::access_control {
-    use sui::tx_context::TxContext;
-    use sui::object::UID;
+    use sui::tx_context::{Self, TxContext};
+    use sui::object::{Self, UID};
     use sui::transfer;
 
     /// Error codes
@@ -28,6 +28,15 @@ module prophyt::access_control {
             id: object::new(ctx),
             for_contract,
         }
+    }
+
+    /// Initialize and transfer owner capability to caller
+    public fun init_owner_cap(for_contract: address, ctx: &mut TxContext) {
+        let cap = OwnerCap {
+            id: object::new(ctx),
+            for_contract,
+        };
+        transfer::public_transfer(cap, tx_context::sender(ctx));
     }
 
     /// Initialize pausable capability

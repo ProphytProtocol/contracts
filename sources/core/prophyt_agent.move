@@ -2,8 +2,9 @@
 /// AI-driven automated fund rebalancing across yield protocols
 #[allow(duplicate_alias)]
 module prophyt::prophyt_agent {
+    use std::vector;
     use sui::tx_context::TxContext;
-    use sui::object::UID;
+    use sui::object::{Self, UID};
     use sui::transfer;
     use sui::event;
     
