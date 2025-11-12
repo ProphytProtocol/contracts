@@ -31,6 +31,7 @@ module prophyt::access_control {
     }
 
     /// Initialize and transfer owner capability to caller
+    #[allow(lint(self_transfer))]
     public fun init_owner_cap(for_contract: address, ctx: &mut TxContext) {
         let cap = OwnerCap {
             id: object::new(ctx),

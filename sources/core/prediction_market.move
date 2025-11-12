@@ -18,6 +18,7 @@ module prophyt::prediction_market {
     use prophyt::suilend_adapter;
     use prophyt::haedal_adapter;
     use prophyt::volo_adapter;
+    use prophyt::walrus_proof_nft;
 
     /// Error codes
     const E_MARKET_NOT_FOUND: u64 = 1;
@@ -94,6 +95,7 @@ module prophyt::prediction_market {
         user: address,
         position: bool,
         amount: u64,
+        nft_id: address,
     }
 
     public struct MarketResolved has copy, drop {
@@ -107,6 +109,7 @@ module prophyt::prediction_market {
         user: address,
         winning_amount: u64,
         yield_share: u64,
+        nft_id: address,
     }
 
     public struct YieldDeposited has copy, drop {
@@ -188,6 +191,7 @@ module prophyt::prediction_market {
     }
 
     /// Place a bet on a market
+    /// Backend should generate portfolio image first and provide image_url and image_blob_id
     public fun place_bet<CoinType>(
         state: &mut PredictionMarketState<CoinType>,
         registry: &mut protocol_selector::ProtocolRegistry<CoinType>,
@@ -197,6 +201,9 @@ module prophyt::prediction_market {
         market_id: u64,
         position: bool,
         bet_coin: Coin<CoinType>,
+        bet_proof_blob_address: address,
+        image_url: String,
+        image_blob_id: String,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -213,6 +220,9 @@ module prophyt::prediction_market {
         
         let current_time = clock::timestamp_ms(clock) / 1000;
         assert!(current_time < market.end_time, E_MARKET_ENDED);
+
+        // Store market question for NFT
+        let market_question = market.question;
 
         // Calculate fees
         let transaction_fee = (amount * state.transaction_fee_percentage) / constants::basis_points();
@@ -267,12 +277,31 @@ module prophyt::prediction_market {
         
         assert!(success, E_INVALID_AMOUNT);
 
+        // Mint BetProofNFT with portfolio image
+        let nft_id = walrus_proof_nft::mint_bet_proof_nft(
+            market_id,
+            market_question,
+            bet_id,
+            position,
+            amount,
+            net_amount,
+            transaction_fee,
+            current_time,
+            bet_proof_blob_address,
+            image_url,
+            image_blob_id,
+            current_time,
+            user_addr,
+            ctx
+        );
+
         event::emit(BetPlaced {
             bet_id,
             market_id,
             user: user_addr,
             position,
             amount,
+            nft_id,
         });
 
         event::emit(YieldDeposited {
@@ -377,6 +406,7 @@ module prophyt::prediction_market {
     }
 
     /// Claim winnings from a resolved market
+    /// Backend should generate winning portfolio image first and provide image_url and image_blob_id
     #[allow(lint(self_transfer))]
     public fun claim_winnings<CoinType>(
         state: &mut PredictionMarketState<CoinType>,
@@ -386,6 +416,10 @@ module prophyt::prediction_market {
         volo_state: &mut volo_adapter::VoloState<CoinType>,
         market_id: u64,
         bet_index: u64,
+        winning_proof_blob_address: address,
+        image_url: String,
+        image_blob_id: String,
+        clock: &Clock,
         ctx: &mut TxContext
     ) {
         let user_addr = tx_context::sender(ctx);
@@ -393,6 +427,10 @@ module prophyt::prediction_market {
         
         let market = table::borrow(&state.markets, market_id);
         assert!(market.resolved, E_MARKET_NOT_RESOLVED);
+        
+        // Store market data for NFT
+        let market_question = market.question;
+        let resolution_timestamp = market.resolution_time;
 
         let market_bets = table::borrow_mut(&mut state.market_bets, market_id);
         assert!(bet_index < vector::length(market_bets), E_BET_NOT_FOUND);
@@ -400,6 +438,11 @@ module prophyt::prediction_market {
         let bet = vector::borrow_mut(market_bets, bet_index);
         assert!(bet.user == user_addr, E_NOT_BET_OWNER);
         assert!(!bet.claimed, E_BET_ALREADY_CLAIMED);
+        
+        // Store bet data for NFT before updating
+        let bet_id = bet.id;
+        let bet_position = bet.position;
+        let original_bet_amount = bet.amount;
 
         // Calculate winnings
         let winning_amount = if (bet.position == market.outcome) {
@@ -426,6 +469,8 @@ module prophyt::prediction_market {
         };
 
         let claim_amount = winning_amount + bet.yield_share;
+        let yield_share = bet.yield_share;
+        let current_time = clock::timestamp_ms(clock) / 1000;
         bet.claimed = true;
 
         if (claim_amount > 0) {
@@ -441,11 +486,39 @@ module prophyt::prediction_market {
             transfer::public_transfer(claimed_coin, user_addr);
         };
 
+        // Calculate profit percentage
+        let profit_percentage = if (original_bet_amount > 0 && winning_amount > 0) {
+            ((winning_amount - original_bet_amount) * 10000) / original_bet_amount
+        } else {
+            0
+        };
+
+        // Mint WinningProofNFT with portfolio image
+        let nft_id = walrus_proof_nft::mint_winning_proof_nft(
+            market_id,
+            market_question,
+            bet_id,
+            bet_position,
+            original_bet_amount,
+            winning_amount,
+            yield_share,
+            profit_percentage,
+            resolution_timestamp,
+            current_time,
+            winning_proof_blob_address,
+            image_url,
+            image_blob_id,
+            current_time,
+            user_addr,
+            ctx
+        );
+
         event::emit(WinningsClaimed {
-            bet_id: bet.id,
+            bet_id,
             user: user_addr,
             winning_amount: claim_amount,
-            yield_share: bet.yield_share,
+            yield_share,
+            nft_id,
         });
     }
 

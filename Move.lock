@@ -2,33 +2,43 @@
 
 [move]
 version = 3
-manifest_digest = "0E837EE82EBCEB1D6E2D8453810D9053F5ECA129F1644BE3862C0A06428C6BE8"
-deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
+manifest_digest = "98B5B47A9AB21AB886DCE397A8CBFD08B9266B408B0374EF6DA372BBA55063D1"
+deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
+dependencies = [
+  { id = "Sui", name = "Sui" },
+  { id = "Walrus", name = "Walrus" },
+]
+
+[[move.package]]
+id = "MoveStdlib"
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "testnet-v1.60.0", subdir = "crates/sui-framework/packages/move-stdlib" }
+
+[[move.package]]
+id = "Sui"
+source = { git = "https://github.com/MystenLabs/sui.git", rev = "testnet-v1.60.0", subdir = "crates/sui-framework/packages/sui-framework" }
+
+dependencies = [
+  { id = "MoveStdlib", name = "MoveStdlib" },
+]
+
+[[move.package]]
+id = "WAL"
+source = { git = "https://github.com/MystenLabs/walrus.git", rev = "main", subdir = "contracts/wal" }
+
 dependencies = [
   { id = "Sui", name = "Sui" },
 ]
 
 [[move.package]]
-id = "MoveStdlib"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/testnet", subdir = "crates/sui-framework/packages/move-stdlib" }
-
-[[move.package]]
-id = "Sui"
-source = { git = "https://github.com/MystenLabs/sui.git", rev = "framework/testnet", subdir = "crates/sui-framework/packages/sui-framework" }
+id = "Walrus"
+source = { git = "https://github.com/MystenLabs/walrus.git", rev = "main", subdir = "contracts/walrus" }
 
 dependencies = [
-  { id = "MoveStdlib", name = "MoveStdlib" },
+  { id = "Sui", name = "Sui" },
+  { id = "WAL", name = "WAL" },
 ]
 
 [move.toolchain-version]
 compiler-version = "1.60.0"
 edition = "2024.beta"
 flavor = "sui"
-
-[env]
-
-[env.testnet]
-chain-id = "4c78adac"
-original-published-id = "0xd33d3d40b85a21a3aa8a98e5e7a4a2068aa5de93df45586135962ad64875781d"
-latest-published-id = "0xd33d3d40b85a21a3aa8a98e5e7a4a2068aa5de93df45586135962ad64875781d"
-published-version = "1"
