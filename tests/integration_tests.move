@@ -12,10 +12,10 @@ module prophyt::integration_tests {
     use prophyt::protocol_selector::{Self, ProtocolRegistry};
     use prophyt::access_control;
 
-    /// USDC test coin
+    
     public struct USDC has drop {}
 
-    // ========== Multi-Protocol Adapter Tests ==========
+    
 
     #[test]
     fun test_multiple_adapters_initialization() {
@@ -43,7 +43,7 @@ module prophyt::integration_tests {
             let suilend = test_scenario::take_shared<SuilendState<USDC>>(&scenario);
             let volo = test_scenario::take_shared<VoloState<USDC>>(&scenario);
             
-            // Just verify they exist
+            
             assert!(haedal_adapter::get_current_apy(&haedal) == 500, 1);
             assert!(suilend_adapter::get_current_apy(&suilend) == 400, 2);
             assert!(volo_adapter::get_current_apy(&volo) == 600, 3);
@@ -68,7 +68,7 @@ module prophyt::integration_tests {
         {
             let registry = test_scenario::take_shared<ProtocolRegistry<USDC>>(&scenario);
             let protocols = protocol_selector::get_all_protocols(&registry);
-            // Just verify the registry exists and can be queried
+            
             assert!(std::vector::length(protocols) >= 0, 1);
             test_scenario::return_shared(registry);
         };
@@ -76,7 +76,7 @@ module prophyt::integration_tests {
         test_scenario::end(scenario);
     }
 
-    // ========== Access Control Tests ==========
+    
 
     #[test]
     fun test_owner_cap_creation() {
@@ -113,7 +113,7 @@ module prophyt::integration_tests {
         test_scenario::end(scenario);
     }
 
-    // ========== Cross-Module Integration Tests ==========
+    
 
     #[test]
     fun test_adapter_tvl_and_apy() {
@@ -127,11 +127,11 @@ module prophyt::integration_tests {
         {
             let state = test_scenario::take_shared<HaedalState<USDC>>(&scenario);
             
-            // Test TVL
+            
             let tvl = haedal_adapter::get_total_tvl(&state);
             assert!(tvl == 0, 1);
             
-            // Test APY
+            
             let apy = haedal_adapter::get_current_apy(&state);
             assert!(apy == 750, 2);
             
@@ -152,7 +152,7 @@ module prophyt::integration_tests {
         assert!(string::length(&volo_name) > 0, 3);
     }
 
-    // ========== Constants and Configuration Tests ==========
+    
 
     #[test]
     fun test_protocol_type_constants() {
@@ -160,7 +160,7 @@ module prophyt::integration_tests {
         assert!(constants::protocol_haedal() == 2, 2);
         assert!(constants::protocol_volo() == 3, 3);
         
-        // Ensure they're all different
+        
         assert!(
             constants::protocol_suilend() != constants::protocol_haedal(),
             4
@@ -182,12 +182,12 @@ module prophyt::integration_tests {
         let risk_weight = constants::risk_weight();
         let basis = constants::basis_points();
         
-        // Weights should be positive
+        
         assert!(apy_weight > 0, 1);
         assert!(tvl_weight > 0, 2);
         assert!(risk_weight > 0, 3);
         
-        // Basis points is typically 10000
+        
         assert!(basis == 10000, 4);
     }
 
@@ -196,18 +196,18 @@ module prophyt::integration_tests {
         let max_protocol_fee = constants::max_protocol_fee();
         let max_transaction_fee = constants::max_transaction_fee();
         
-        // Fees should be reasonable (less than 100%)
+        
         assert!(max_protocol_fee <= 10000, 1);
         assert!(max_transaction_fee <= 10000, 2);
     }
 
-    // ========== State Isolation Tests ==========
+    
 
     #[test]
     fun test_adapter_states_are_isolated() {
         let mut scenario = test_scenario::begin(@0x1);
         
-        // Initialize different adapters
+        
         {
             let ctx = test_scenario::ctx(&mut scenario);
             haedal_adapter::initialize<USDC>(500, ctx);
@@ -221,15 +221,15 @@ module prophyt::integration_tests {
         
         test_scenario::next_tx(&mut scenario, @0x1);
         {
-            // Both states should exist independently
+            
             let haedal_state = test_scenario::take_shared<HaedalState<USDC>>(&scenario);
             let suilend_state = test_scenario::take_shared<SuilendState<USDC>>(&scenario);
             
-            // Check Haedal APY
+            
             let haedal_apy = haedal_adapter::get_current_apy(&haedal_state);
             assert!(haedal_apy == 500, 1);
             
-            // Check Suilend APY
+            
             let suilend_apy = suilend_adapter::get_current_apy(&suilend_state);
             assert!(suilend_apy == 400, 2);
             
@@ -240,7 +240,7 @@ module prophyt::integration_tests {
         test_scenario::end(scenario);
     }
 
-    // ========== Error Condition Tests ==========
+    
 
     #[test]
     fun test_rebalance_disabled_agent() {
@@ -254,7 +254,7 @@ module prophyt::integration_tests {
         {
             let config = test_scenario::take_shared<prophyt::prophyt_agent::AgentConfig>(&scenario);
             let (enabled, _, _, _) = prophyt::prophyt_agent::get_stats(&config);
-            // Agent should be enabled by default
+            
             assert!(enabled == true, 1);
             test_scenario::return_shared(config);
         };
